@@ -1,0 +1,12 @@
+jobs:
+  here:
+    steps:
+      - run: echo root > at-root.txt
+      - run: echo sub > here.txt
+        dir: sub
+  imported:
+    uses: pipeline/inner.yaml
+  missing:
+    steps:
+      - run: echo never > never.txt
+        dir: nope

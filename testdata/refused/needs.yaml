@@ -1,0 +1,13 @@
+jobs:
+  a:
+    needs: [c]
+    steps: [{run: echo a}]
+  b:
+    needs: [ghost]
+    steps: [{run: echo b}]
+  c:
+    needs: [a]
+    steps: [{run: echo c}]
+  d:
+    needs: d
+    steps: [{run: echo d}]

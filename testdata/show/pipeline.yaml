@@ -1,0 +1,18 @@
+name: show
+jobs:
+  build:
+    steps:
+      - run: echo built
+  test:
+    needs: [build]
+    steps:
+      - run: echo ok
+      - run: |
+          for i in $(seq 1 25); do echo "line $i"; done
+          exit 2
+  e2e:
+    needs: [test]
+    steps:
+      - run: echo never
+  lint:
+    uses: pipeline/lint.yaml

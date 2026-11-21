@@ -1,0 +1,24 @@
+name: failure
+jobs:
+  build:
+    steps:
+      - run: echo build-1 >> trace.txt
+      - run: |
+          echo "about to fail"
+          exit 3
+      - run: echo build-3 >> trace.txt
+  test:
+    needs: [build]
+    steps:
+      - run: echo test >> trace.txt
+  deploy:
+    needs: [test]
+    steps:
+      - run: echo deploy >> trace.txt
+  lint:
+    steps:
+      - run: echo lint >> trace.txt
+  docs:
+    needs: [lint]
+    steps:
+      - run: echo docs >> trace.txt

@@ -1,0 +1,11 @@
+jobs:
+  vet:
+    steps:
+      - run: exit 4
+  fmt:
+    needs: [vet]
+    steps:
+      - run: echo fmt >> trace.txt
+  spell:
+    steps:
+      - run: echo spell >> trace.txt

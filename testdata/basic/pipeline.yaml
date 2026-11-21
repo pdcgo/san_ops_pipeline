@@ -1,0 +1,23 @@
+name: basic
+env:
+  A: "1"
+  B: 2
+jobs:
+  zeta:
+    env:
+      J: job
+    steps:
+      - run: echo zeta
+      - run: |
+          echo one
+          echo two
+        dir: sub
+        env:
+          S: step
+  alpha:
+    needs: zeta
+    uses: pipeline/checks.yaml
+  mid:
+    needs: [zeta, alpha]
+    steps:
+      - run: echo mid

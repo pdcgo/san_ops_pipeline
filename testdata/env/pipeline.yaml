@@ -1,0 +1,19 @@
+env:
+  LEVEL: pipeline
+  FROM_PIPELINE: p
+jobs:
+  plain:
+    env:
+      LEVEL: job
+      FROM_JOB: j
+    steps:
+      - run: echo "$LEVEL $FROM_PIPELINE $FROM_JOB $FROM_STEP $FROM_CALLER" > plain.txt
+        env:
+          LEVEL: step
+          FROM_STEP: s
+      - run: echo "$LEVEL" > plain2.txt
+  imported:
+    env:
+      LEVEL: importing-job
+      FROM_JOB: ij
+    uses: pipeline/inner.yaml

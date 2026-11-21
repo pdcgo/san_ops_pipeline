@@ -1,0 +1,20 @@
+name: order
+jobs:
+  b:
+    needs: [a]
+    steps:
+      - run: echo b >> order.txt
+  a:
+    steps:
+      - run: echo a >> order.txt
+  d:
+    needs: c
+    steps:
+      - run: echo d >> order.txt
+  c:
+    needs: [a]
+    steps:
+      - run: echo c >> order.txt
+  e:
+    steps:
+      - run: echo e >> order.txt

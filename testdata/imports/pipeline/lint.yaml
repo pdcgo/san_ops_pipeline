@@ -1,0 +1,9 @@
+name: lint
+jobs:
+  # the same name as the importing file's job: an imported file's names stay its own
+  build:
+    steps:
+      - run: echo inner-build >> trace.txt
+  vet:
+    needs: [build]
+    uses: pipeline/deep.yaml

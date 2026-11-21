@@ -1,0 +1,11 @@
+name: stop
+jobs:
+  long:
+    steps:
+      - run: |
+          ( while true; do echo beat >> beat.txt; sleep 0.1; done ) &
+          echo started > started.txt
+          sleep 60
+  after:
+    steps:
+      - run: echo after > after.txt

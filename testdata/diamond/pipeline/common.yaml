@@ -1,0 +1,4 @@
+jobs:
+  say:
+    steps:
+      - run: echo common >> trace.txt

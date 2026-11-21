@@ -1,0 +1,10 @@
+jobs:
+  lint:
+    uses: pipeline/lint.yaml
+  after:
+    needs: [lint]
+    steps:
+      - run: echo after >> trace.txt
+  other:
+    steps:
+      - run: echo other >> trace.txt

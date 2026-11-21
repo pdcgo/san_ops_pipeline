@@ -1,0 +1,3 @@
+jobs:
+  first:
+    uses: refused/loop_b.yaml

@@ -1,0 +1,11 @@
+name: leftover
+jobs:
+  bg:
+    steps:
+      - run: |
+          ( while true; do echo beat >> beat.txt; sleep 0.1; done ) &
+          sleep 0.5
+          echo done
+  next:
+    steps:
+      - run: echo next > next.txt

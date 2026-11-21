@@ -1,0 +1,5 @@
+jobs:
+  args:
+    steps:
+      - run: |
+          printf '%s\n' 'a\b' "c\\d" "q\"q" '*' "~" '$HOME' "two  spaces" > args.txt

@@ -1,0 +1,6 @@
+jobs:
+  inner:
+    steps:
+      - run: echo inner-root > inner-at-root.txt
+      - run: echo inner-sub > inner-here.txt
+        dir: sub

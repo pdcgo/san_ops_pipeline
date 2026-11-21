@@ -1,0 +1,5 @@
+jobs:
+  ok:
+    uses: refused/inner_bad.yaml
+  missing:
+    uses: refused/nope.yaml

@@ -1,0 +1,29 @@
+name: [a, b]
+env:
+  GOOD: 1
+  bad-name: x
+  NESTED: {a: 1}
+  EMPTY:
+jobs:
+  both:
+    uses: pipeline/x.yaml
+    steps:
+      - run: echo both
+  neither:
+    needs: [both]
+  bad name:
+    steps:
+      - run: echo bad
+  nosteps:
+    steps: []
+  notlist:
+    steps: echo hi
+  steptype:
+    steps:
+      - echo hi
+      - dir: x
+      - run: "  "
+  needsbad:
+    needs: {a: 1}
+    steps:
+      - run: echo n

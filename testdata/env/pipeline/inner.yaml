@@ -1,0 +1,12 @@
+env:
+  INNER_PIPELINE: ip
+  FROM_JOB: inner-pipeline
+jobs:
+  show:
+    steps:
+      - run: echo "$LEVEL $FROM_PIPELINE $FROM_JOB $INNER_PIPELINE" > inner.txt
+  own:
+    env:
+      LEVEL: inner-job
+    steps:
+      - run: echo "$LEVEL" > inner2.txt

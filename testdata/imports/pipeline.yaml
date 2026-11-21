@@ -1,0 +1,12 @@
+name: imports
+jobs:
+  build:
+    steps:
+      - run: echo outer-build >> trace.txt
+  lint:
+    needs: [build]
+    uses: pipeline/lint.yaml
+  after:
+    needs: [lint]
+    steps:
+      - run: echo after >> trace.txt

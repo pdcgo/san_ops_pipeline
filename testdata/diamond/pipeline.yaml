@@ -1,0 +1,5 @@
+jobs:
+  one:
+    uses: pipeline/common.yaml
+  two:
+    uses: pipeline/common.yaml

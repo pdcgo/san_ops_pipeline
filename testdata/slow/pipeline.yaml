@@ -1,0 +1,4 @@
+jobs:
+  slow:
+    steps:
+      - run: sleep 1.5
