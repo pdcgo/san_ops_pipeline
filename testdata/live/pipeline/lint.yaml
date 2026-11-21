@@ -1,0 +1,4 @@
+jobs:
+  vet:
+    steps:
+      - run: echo vetting

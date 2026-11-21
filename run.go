@@ -14,14 +14,18 @@ import (
 
 // RunOptions are the choices of one run.
 type RunOptions struct {
-	// Out receives the run's progress as plain lines: one when a job starts, one when it ends, the
+	// Out receives the run's progress. When it is an interactive terminal (an *os.File such as
+	// os.Stdout on a console), it shows a live view redrawn in place: every job with its status and
+	// time, a ticking timer on the running one and the running step's last 5 lines under it; at the
+	// end the summary, the failing step's last 20 lines and the run folder. Anything else (a
+	// buffer, a file, a pipe) gets plain lines: one when a job starts, one when it ends, the
 	// failing step's last 20 lines, a `still running` line every 5 minutes of a long step, and a
 	// final line with the result and the run folder. Nil prints nothing; the job logs and
 	// summary.md are written either way.
 	Out io.Writer
 
-	// Verbose prints every line the steps print as well, each with `[job]` in front (`[lint/vet]`
-	// for a job of an imported file).
+	// Verbose prints every line the steps print, each with `[job]` in front (`[lint/vet]` for a job
+	// of an imported file), as plain lines — in a terminal too, instead of the live view.
 	Verbose bool
 }
 
@@ -31,8 +35,9 @@ var errCtrlC = errors.New("Ctrl-C")
 // runConfig holds what the tests change; a zero field means the real thing.
 type runConfig struct {
 	findBash  func() (string, error)
-	tickEvery time.Duration // replaces the view's own (5 minutes for plain lines)
+	tickEvery time.Duration // replaces the view's own (5 minutes for plain lines, 1 second live)
 	pollEvery time.Duration // how often a running step's log is read for new lines
+	term      *termSys      // replaces the real terminal (the live view's choice and console mode)
 }
 
 const defaultPollEvery = 200 * time.Millisecond
@@ -51,6 +56,10 @@ const defaultPollEvery = 200 * time.Millisecond
 //
 // The run writes `<root>/.san_ops_pipeline_cache/<stamp>-<name>/`: a `<job>.log` per job (an
 // imported file's job logs in a sub-folder named after the importing job) and summary.md.
+//
+// Its progress goes to opts.Out: a live view redrawn in place when Out is an interactive terminal
+// (on Windows the console's escape-code mode is turned on for the run and put back after it),
+// plain lines for anything else, every line with Verbose — see RunOptions.
 //
 // Cancelling ctx — or pressing Ctrl-C, which Run catches while it runs — stops the running step
 // together with every process it started, starts nothing more, and returns the Result with
@@ -88,7 +97,9 @@ func (p *Pipeline) run(ctx context.Context, opts RunOptions, cfg runConfig) (*Re
 	}
 
 	res := &Result{Name: p.Name, File: p.File, Dir: dir, Started: started}
-	v := newView(opts)
+
+	v := newView(opts, cfg)
+	defer v.close()
 
 	r := &runner{
 		ctx:       runCtx,

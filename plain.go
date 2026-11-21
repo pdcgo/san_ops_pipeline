@@ -138,6 +138,9 @@ func failedJobs(jobs []JobResult) []string {
 	return out
 }
 
+// close: plain lines change nothing that needs putting back.
+func (v *plainView) close() {}
+
 func (v *plainView) runEnd(res *Result) {
 	verb := "PASSED in"
 

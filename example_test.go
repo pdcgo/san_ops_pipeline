@@ -59,6 +59,48 @@ func ExampleLoadError() {
 	// first: refused/needs.yaml 6
 }
 
+// Error lists the problems one per line under a count; a single problem is just its line.
+func ExampleLoadError_Error() {
+	_, err := san_ops_pipeline.Load("testdata", "refused/loop_a.yaml")
+
+	var refused *san_ops_pipeline.LoadError
+	if errors.As(err, &refused) {
+		fmt.Println(refused.Error())
+	}
+
+	_, err = san_ops_pipeline.Load("testdata", "refused/imports_bad.yaml")
+	fmt.Println(err)
+
+	// Output:
+	// refused/loop_b.yaml:3: import loop: refused/loop_a.yaml → refused/loop_b.yaml → refused/loop_a.yaml — a file cannot import itself, directly or through others
+	// 3 problems in the pipeline files:
+	//   refused/imports_bad.yaml:5: uses: refused/nope.yaml: cannot read it: no such file
+	//   refused/inner_bad.yaml:2: job "x" has neither steps: nor uses:
+	//   refused/inner_bad.yaml:3: unknown key "stepz" in job "x" (allowed: needs, steps, uses, env)
+}
+
+// String writes a problem as `file:line: msg`, or `file: msg` for the file as a whole.
+func ExampleProblem_String() {
+	fmt.Println(san_ops_pipeline.Problem{File: "pipeline/slice.yaml", Line: 7, Msg: `unknown key "if" in job "e2e" (allowed: needs, steps, uses, env)`})
+	fmt.Println(san_ops_pipeline.Problem{File: "pipeline/empty.yaml", Msg: "the file is empty — a pipeline file needs jobs:"})
+
+	_, err := san_ops_pipeline.Load("testdata", "refused/needs.yaml")
+
+	var refused *san_ops_pipeline.LoadError
+	if errors.As(err, &refused) {
+		for _, p := range refused.Problems {
+			fmt.Println(p.String())
+		}
+	}
+
+	// Output:
+	// pipeline/slice.yaml:7: unknown key "if" in job "e2e" (allowed: needs, steps, uses, env)
+	// pipeline/empty.yaml: the file is empty — a pipeline file needs jobs:
+	// refused/needs.yaml:6: job "b" needs "ghost", which is not a job in this file
+	// refused/needs.yaml:9: needs loop: a → c → a (each needs the next) — these jobs can never start
+	// refused/needs.yaml:12: needs loop: d → d (each needs the next) — these jobs can never start
+}
+
 // Run runs a loaded pipeline. It runs bash, so this example only compiles.
 func ExamplePipeline_Run() {
 	p, err := san_ops_pipeline.Load(".", "pipeline/slice.yaml")
@@ -66,7 +108,9 @@ func ExamplePipeline_Run() {
 		log.Fatal(err) // every problem of the file, with file:line
 	}
 
-	// Run catches Ctrl-C itself while it runs; a cancelled ctx stops it the same way.
+	// os.Stdout on a console or terminal: the live view, redrawn in place. Piped, redirected or in
+	// cron: plain lines. Verbose: true streams every line instead. Run catches Ctrl-C itself while
+	// it runs; a cancelled ctx stops it the same way.
 	res, err := p.Run(context.Background(), san_ops_pipeline.RunOptions{Out: os.Stdout})
 	if err != nil {
 		log.Fatal(err) // no bash, a run folder that cannot be written, or interrupted

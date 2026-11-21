@@ -553,25 +553,51 @@ func TestRunEndsEveryGoroutineItStarts(t *testing.T) {
 	signal.Notify(c, os.Interrupt)
 	signal.Stop(c)
 
-	check := func(name string, run func()) {
-		before := runtime.NumGoroutine()
+	// Each case is a subtest, so one can be run alone (-run 'TestRunEndsEveryGoroutineItStarts/live').
+	check := func(name string, run func(t *testing.T)) {
+		t.Run(name, func(t *testing.T) {
+			before := runtime.NumGoroutine()
 
-		run()
+			run(t)
 
-		after := runtime.NumGoroutine()
-		if after != before {
-			buf := make([]byte, 1<<20)
-			n := runtime.Stack(buf, true)
-			t.Errorf("%s: %d goroutines before Run, %d after:\n%s", name, before, after, buf[:n])
-		}
+			after := runtime.NumGoroutine()
+			if after != before {
+				buf := make([]byte, 1<<20)
+				n := runtime.Stack(buf, true)
+				t.Errorf("%s: %d goroutines before Run, %d after:\n%s", name, before, after, buf[:n])
+			}
+		})
 	}
 
-	check("a failing run with ticks and verbose lines", func() {
+	check("a failing run with ticks and verbose lines", func(t *testing.T) {
 		root := copyRoot(t, "show")
 		_, _ = mustRun(t, mustLoad(t, root), RunOptions{Out: &bytes.Buffer{}, Verbose: true}, runConfig{tickEvery: 20 * time.Millisecond})
 	})
 
-	check("an interrupted run", func() {
+	check("a live-view run on a terminal, the timer ticking", func(t *testing.T) {
+		root := copyRoot(t, "slow")
+
+		out, err := os.Create(filepath.Join(t.TempDir(), "terminal.txt"))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		defer out.Close()
+
+		console := &fakeConsole{mode: 3}
+		cfg := runConfig{term: console.sys(out, "xterm"), tickEvery: 20 * time.Millisecond}
+
+		res, err := mustRun(t, mustLoad(t, root), RunOptions{Out: out}, cfg)
+		if err != nil || res.Status != Passed {
+			t.Errorf("Run: %v %+v", err, res)
+		}
+
+		if !regexp.MustCompile(`● slow   sleep 1\.5 +0m01s\n`).MatchString(readText(t, out.Name())) {
+			t.Errorf("the timer never redrew the running job at 0m01s:\n%q", readText(t, out.Name()))
+		}
+	})
+
+	check("an interrupted run", func(t *testing.T) {
 		root := copyRoot(t, "stop")
 		p := mustLoad(t, root)
 

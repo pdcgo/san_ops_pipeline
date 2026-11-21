@@ -26,12 +26,16 @@
 // one job at a time, in `needs` order and the file's order where `needs` leaves it open, each step
 // with `bash -c` (Git for Windows' bash on Windows, never the WSL launcher). A failing step fails
 // its job, every job that needs it is skipped, every other job still runs. Each run writes
-// `<root>/.san_ops_pipeline_cache/<stamp>-<name>/` — a log per job and summary.md — and prints its
-// progress as plain lines to [RunOptions.Out]. A failed pipeline is a [Result] ([Result.Failed]),
-// not an error; err is for a run that could not happen or was interrupted ([ErrNoBash],
+// `<root>/.san_ops_pipeline_cache/<stamp>-<name>/` — a log per job and summary.md — and shows its
+// progress on [RunOptions.Out]: when Out is an interactive terminal, a live view redrawn in place
+// (every job with its status and time, a ticking timer, the running step's last 5 lines; at the
+// end the summary, the failing step's last 20 lines and the run folder); anything else — a pipe,
+// a file, cron — gets plain lines. A failed pipeline is a [Result] ([Result.Failed]), not an
+// error; err is for a run that could not happen or was interrupted ([ErrNoBash],
 // [ErrInterrupted]).
 //
 // The package runs nothing on its own: no scheduler, nothing left running. Every goroutine Run
-// starts has ended when it returns, and so has every process a step started. The caller (a `san`
-// command, a script, a cron) decides when to run a pipeline.
+// starts has ended when it returns, and so has every process a step started; a Windows console's
+// mode, changed for the live view, is put back. The caller (a `san` command, a script, a cron)
+// decides when to run a pipeline.
 package san_ops_pipeline

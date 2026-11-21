@@ -8,10 +8,11 @@ import (
 
 // view is what a run reports to as it goes — the one seam between running and showing.
 //
-// Today's view is plainView: plain lines, for any Out (and Verbose). The live view redrawn in place
-// for an interactive terminal (P2) implements the same interface; Run picks the view, the runner
-// never knows which one it talks to. Every call comes through lockedView, one at a time, so a view
-// needs no locking of its own even though output and tick arrive from a step's watcher goroutine.
+// Two views implement it: liveView, redrawn in place, when Out is an interactive terminal (and
+// Verbose is off), and plainView — plain lines — for anything else. Run picks the view (newView);
+// the runner never knows which one it talks to. Every call comes through lockedView, one at a time,
+// so a view needs no locking of its own even though output and tick arrive from a step's watcher
+// goroutine.
 type view interface {
 	// runStart: the run folder exists and nothing has run yet. p is the whole pipeline, imports
 	// included, so a view can lay out every job at once.
@@ -38,6 +39,10 @@ type view interface {
 
 	// tickEvery is how often tick is called during a step (0: never).
 	tickEvery() time.Duration
+
+	// close: Run is returning — after runEnd, or early. The view puts back whatever it changed
+	// (the live view: the Windows console mode). Called once.
+	close()
 }
 
 // tailLines is how many of a failing step's last lines are shown (default 13: 20 after a failure).
@@ -51,9 +56,22 @@ type jobRef struct {
 	Width int    // the longest job name of the job's own file, to align the columns
 }
 
-// newView picks the view for a run's options. P2 adds the live view here, chosen when Out is an
-// interactive terminal; until then every run gets plain lines.
-func newView(opts RunOptions) view {
+// newView picks the view for a run: the live view when Out is an interactive terminal and Verbose
+// is off (Verbose streams every line instead), plain lines for anything else — a buffer, a file, a
+// pipe, a nil Out (which prints nothing). cfg.term stands in for the real terminal in tests.
+func newView(opts RunOptions, cfg runConfig) view {
+	if !opts.Verbose {
+		sys := defaultTermSys()
+		if cfg.term != nil {
+			sys = *cfg.term
+		}
+
+		t, ok := openTerminal(opts.Out, sys)
+		if ok {
+			return &lockedView{v: newLiveView(t)}
+		}
+	}
+
 	out := opts.Out
 	if out == nil {
 		out = io.Discard
@@ -123,4 +141,11 @@ func (l *lockedView) runEnd(res *Result) {
 
 func (l *lockedView) tickEvery() time.Duration {
 	return l.v.tickEvery()
+}
+
+func (l *lockedView) close() {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	l.v.close()
 }
